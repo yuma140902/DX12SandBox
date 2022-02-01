@@ -3,6 +3,14 @@
 #include <iostream>
 #endif
 
+#include <d3d12.h>
+#include <dxgi1_6.h>
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
+
+#include <vector>
+#include <string>
+
 // @brief コンソール画面に文字列を表示
 // @param format %dなどのフォーマット
 // @remarks デバッグ時のみ動作する
@@ -28,13 +36,15 @@ LRESULT WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 const unsigned int WINDOW_WIDTH = 1280;
 const unsigned int WINDOW_HEIGHT = 720;
 
+IDXGIFactory6* dxgi_factory = nullptr;
+
 #ifdef _DEBUG
 int main()
 #else
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #endif
 {
-    DebugOutputFormatString("Show windows test");
+    DebugOutputFormatString("Show windows test\n");
 
     WNDCLASSEX w = {};
     w.cbSize = sizeof(WNDCLASSEX);
@@ -58,6 +68,27 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
         nullptr,
         w.hInstance,
         nullptr);
+
+    //TODO: Chapter 3.2.2
+    if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&dxgi_factory)))) {
+        DebugOutputFormatString("CreateDXGIFactory1 失敗\n");
+        return -1;
+    }
+    // アダプターを列挙する
+    std::vector<IDXGIAdapter*> adapters;
+    {
+        IDXGIAdapter* tmp = nullptr;
+        int i;
+        for (i = 0; dxgi_factory->EnumAdapters(i, &tmp) != DXGI_ERROR_NOT_FOUND; ++i)
+            adapters.push_back(tmp);
+        DebugOutputFormatString("%d個のアダプター\n", i);
+    }
+    for (auto adapter : adapters) {
+        DXGI_ADAPTER_DESC desc;
+        adapter->GetDesc(&desc);
+        DebugOutputFormatString("- %ls\n", desc.Description);
+        std::wstring str = desc.Description;
+    }
 
     ShowWindow(hwnd, SW_SHOW);
 
